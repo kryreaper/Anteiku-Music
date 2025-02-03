@@ -164,6 +164,51 @@ async def anteiku_play(ctx, *, query):
                 await player.play_next(ctx)
             return
 
+        # Manejar YouTube URLs
+        elif YOUTUBE_REGEX.match(query):
+            ydl_temp_opts = {**ydl_opts, 'noplaylist': False}
+            
+            with youtube_dl.YoutubeDL(ydl_temp_opts) as ydl_temp:
+                info = await asyncio.to_thread(
+                    ydl_temp.extract_info,
+                    query,
+                    download=False
+                )
+
+            if not info:
+                return await ctx.send("✘ 𝘐𝘯𝘷𝘢𝘭𝘪𝘥 𝘠𝘰𝘶𝘛𝘶𝘣𝘦 𝘜𝘙𝘓.", ephemeral=True)
+
+            entries = []
+            if 'entries' in info:
+                entries = [entry for entry in info['entries'] if entry]
+            else:
+                entries = [info]
+
+            valid_entries = []
+            for entry in entries:
+                if entry and entry.get('url'):
+                    valid_entries.append({
+                        'title': entry.get('title', 'Unknown Title'),
+                        'url': entry.get('url')
+                    })
+
+            if not valid_entries:
+                return await ctx.send("✘ 𝘕𝘰 𝘷𝘢𝘭𝘪𝘥 𝘷𝘪𝘥𝘦𝘰𝘴 𝘪𝘯 𝘵𝘩𝘦 𝘜𝘙𝘓.", ephemeral=True)
+
+            if player.shuffle:
+                random.shuffle(valid_entries)
+
+            player.queue.extend(valid_entries)
+
+            if len(valid_entries) == 1:
+                await ctx.send(f"♬ 𝘈𝘥𝘥𝘦𝘥 '{valid_entries[0]['title']}' 𝘵𝘰 𝘵𝘩𝘦 𝘲𝘶𝘦𝘶𝘦.", ephemeral=True)
+            else:
+                await ctx.send(f"♬ 𝘈𝘥𝘥𝘦𝘥 {len(valid_entries)} 𝘴𝘰𝘯𝘨𝘴 𝘧𝘳𝘰𝘮 𝘠𝘰𝘶𝘛𝘶𝘣𝘦 𝘱𝘭𝘢𝘺𝘭𝘪𝘴𝘵." + (" (𝘚𝘩𝘶𝘧𝘧𝘭𝘦𝘥)" if player.shuffle else ""), ephemeral=True)
+
+            if not player.voice_client.is_playing():
+                await player.play_next(ctx)
+            return
+
         # Búsqueda optimizada con caché
         with youtube_dl.YoutubeDL({'quiet': True, 'format': 'bestaudio'}) as ydl:
             info = await asyncio.to_thread(
