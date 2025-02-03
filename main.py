@@ -126,7 +126,7 @@ async def process_spotify(url: str):
             return [{
                 'title': f"{item['track']['name']} - {item['track']['artists'][0]['name']}",
                 'url': f"ytsearch:{item['track']['name']} {item['track']['artists'][0]['name']} audio oficial"
-            } for item in results['items'][:10]]
+            } for item in results['items'][:100000]]
     
     except Exception as e:
         print(f"Spotify Error: {e}")
