@@ -137,6 +137,7 @@ async def process_spotify(url: str):
     except Exception as e:
         print(f"Spotify Error: {e}")
         return None
+        
 async def process_youtube(url: str):
     try:
         if "youtube.com" in url or "youtu.be" in url:
@@ -156,111 +157,8 @@ async def process_youtube(url: str):
         print(f"YouTube Error: {e}")
         return None
 
-@bot.command(name="ap", help="Anteiku Play - Reproduce música (5 resultados). Uso: !ap ")
-async def anteiku_play(ctx, *, query):
-    await ctx.defer(ephemeral=True)
-    if not ctx.author.voice:
-        return await ctx.send("☹︎ 𝘊𝘰𝘯𝘦𝘤𝘵𝘢 𝘢 𝘶𝘯𝘢 𝘤𝘢𝘯𝘢𝘭 𝘥𝘦 𝘷𝘰𝘪𝘤𝘦 𝘱𝘳𝘪𝘮𝘦𝘳𝘢𝘮𝘦𝘯𝘵𝘦.", ephemeral=True)
 
-    if not player.voice_client:
-        player.voice_client = await ctx.author.voice.channel.connect()
-    elif ctx.author.voice.channel != player.voice_client.channel:
-        return await ctx.send("☹︎ 𝘐𝘮 𝘪𝘯 𝘢𝘯𝘰𝘵𝘩𝘦𝘳 𝘤𝘩𝘢𝘯𝘯𝘦𝘭, 𝘪 𝘤𝘢𝘯𝘵 𝘣𝘦 𝘪𝘯 𝘵𝘸𝘰 𝘱𝘭𝘢𝘤𝘦𝘴 𝘢𝘵 𝘵𝘩𝘦 𝘴𝘢𝘮𝘦 𝘵𝘪𝘮𝘦.. 𝘧𝘰𝘳 𝘯𝘰𝘸..", ephemeral=True)
-
-    try:
-        if "spotify.com" in query:
-            tracks = await process_spotify(query)
-            if not tracks:
-                return await ctx.send("☹︎ 𝘚𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘸𝘦𝘵 𝘸𝘳𝘰𝘯𝘨 𝘸𝘪𝘵𝘩 𝘚𝘱𝘰𝘵𝘪𝘧𝘺, 𝘵𝘳𝘺 𝘢𝘨𝘢𝘪𝘯.", ephemeral=True)
-            if player.shuffle:
-                random.shuffle(tracks)
-            player.queue.extend(tracks)
-            await ctx.send(f"♬ Added {len(tracks)} 𝘴𝘰𝘯𝘨𝘴 𝘧𝘳𝘰𝘮 𝘢 𝘱𝘳𝘦𝘵𝘵𝘺 𝘱𝘭𝘢𝘺𝘭𝘪𝘴𝘵.", ephemeral=True)
-            if not player.voice_client.is_playing():
-                await player.play_next(ctx)
-            return
-
-        elif "youtube.com" in query or "youtu.be" in query:
-            tracks = await process_youtube(query)
-            if not tracks:
-                return await ctx.send("☹︎ 𝘚𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘸𝘦𝘵 𝘸𝘳𝘰𝘯𝘨 𝘸𝘪𝘵𝘩 𝘠𝘰𝘶𝘛𝘶𝘣𝘦, 𝘵𝘳𝘺 𝘢𝘨𝘢𝘪𝘯.", ephemeral=True)
-            if player.shuffle:
-                random.shuffle(tracks)
-            player.queue.extend(tracks)
-            await ctx.send(f"♬ Added {len(tracks)} 𝘴𝘰𝘯𝘨𝘴 𝘧𝘳𝘰𝘮 𝘠𝘰𝘶𝘛𝘶𝘣𝘦.", ephemeral=True)
-            if not player.voice_client.is_playing():
-                await player.play_next(ctx)
-            return
-
-        else:
-            # Búsqueda optimizada con caché
-            with youtube_dl.YoutubeDL({'quiet': True, 'format': 'bestaudio'}) as ydl:
-                info = await asyncio.to_thread(
-                    ydl.extract_info,
-                    f"ytsearch5:{query}",
-                    download=False,
-                    process=False  # Acelerar búsqueda
-                )
-                results = list(info['entries'])[:5]
-
-            class SongMenu(discord.ui.View):
-                def __init__(self, results):
-                    super().__init__(timeout=15)
-                    self.results = results
-                    self.choice = None
-
-                for i in range(5):
-                    btn = discord.ui.Button(
-                        label=str(i + 1),
-                        style=discord.ButtonStyle.primary,
-                        row=0 if i < 3 else 1
-                    )
-                    btn.callback = self.create_callback(i)
-                    self.add_item(btn)
-
-                def create_callback(self, index):
-                    async def button_handler(interaction):
-                        await interaction.response.defer(ephemeral=True)
-                        self.choice = index
-                        self.stop()
-
-                    return button_handler
-
-            view = SongMenu(results)
-            embed = discord.Embed(title="🎵 𝘈𝘯𝘵𝘦𝘪𝘬𝘶 𝘚𝘦𝘢𝘳𝘤𝘩: 𝘗𝘪𝘤𝘬 𝘢 𝘚𝘰𝘯𝘨, 𝘢𝘯𝘥 𝘥𝘰𝘯'𝘵 𝘣𝘦 𝘴𝘩𝘺", color=0x5e05ef)
-            for i, song in enumerate(results):
-                duration = song.get('duration', 0)
-                mins, secs = divmod(int(duration), 60) if duration else (0, 0)
-                link = song.get('webpage_url', song.get('url', ''))
-                embed.add_field(
-                    name=f"{i + 1}. {song['title'][:35]}...",
-                    value=f"⏱︎{mins}:{secs:02d} |",
-                    inline=False
-                )
-            msg = await ctx.send(embed=embed, view=view, ephemeral=True)
-            await view.wait()
-
-            if view.choice is not None and 0 <= view.choice < len(results):
-                selected = results[view.choice]
-                await msg.edit(content="𝘓𝘰𝘢𝘥𝘪𝘯𝘨 𝘺𝘰𝘶𝘳 𝘴𝘰𝘯𝘨...", embed=None, view=None)
-            else:
-                selected = results[0]
-                await msg.edit(content="♬ 𝘗𝘪𝘤𝘬𝘪𝘯𝘨 𝘵𝘩𝘦 𝘧𝘪𝘳𝘴𝘵 𝘳𝘦𝘴𝘶𝘭𝘵...", embed=None, view=None)
-
-            player.queue.append({
-                'title': selected['title'],
-                'url': selected['url']
-            })
-            if not player.voice_client.is_playing():
-                await player.play_next(ctx)
-
-    except Exception as e:
-        print(f"Error crítico: {e}")
-        await ctx.send("✘ 𝘚𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘸𝘦𝘵 𝘸𝘳𝘰𝘯𝘨, 𝘵𝘳𝘺 𝘢𝘨𝘢𝘪𝘯.", ephemeral=True)
-
-
-
-
+        
 
 @bot.command(name="ap", help="Anteiku Play - Reproduce música (5 resultados). Uso: !ap <busqueda o link>")
 async def anteiku_play(ctx, *, query):
