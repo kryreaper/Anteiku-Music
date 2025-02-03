@@ -6,6 +6,7 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
+import random
 
 # Configuración inicial
 load_dotenv()
@@ -50,6 +51,8 @@ class MusicPlayer:
         self.voice_client = None
         self.ydl = youtube_dl.YoutubeDL(ydl_opts)
         self.lock = asyncio.Lock()
+        self.loop = False  # Estado de loop
+        self.shuffle = False  # Estado de shuffle
 
     async def play_next(self, ctx):
         async with self.lock:
@@ -57,7 +60,11 @@ class MusicPlayer:
                 return
 
             try:
-                song = self.queue.pop(0)
+                if self.loop:
+                    # Si loop está activo, reproducir la misma canción de nuevo
+                    song = self.queue[0]
+                else:
+                    song = self.queue.pop(0)
                 
                 # Extraer información del audio (optimizado)
                 info = await asyncio.to_thread(
@@ -98,7 +105,6 @@ class MusicPlayer:
                         bot.loop
                     )
                 )
-
             except Exception as e:
                 print(f"Error: {e}")
                 await ctx.send("✘ 𝘛𝘩𝘦𝘳𝘦'𝘴 𝘴𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘸𝘳𝘰𝘯𝘨 𝘸𝘪𝘵𝘩 𝘵𝘩𝘪𝘴 𝘴𝘰𝘯𝘨.. 𝘚𝘬𝘪𝘱𝘱𝘪𝘯𝘨...", ephemeral=True)
@@ -137,7 +143,7 @@ async def anteiku_play(ctx, *, query):
     await ctx.defer(ephemeral=True)
     
     if not ctx.author.voice:
-        return await ctx.send("☹︎ 𝘎𝘦𝘵 𝘪𝘯 𝘢 𝘷𝘰𝘪𝘤𝘦 𝘤𝘩𝘢𝘯𝘯𝘦𝘭 𝘧𝘪𝘳𝘴𝘵.", ephemeral=True)
+        return await ctx.send("☹︎ 𝘊𝘰𝘯𝘦𝘤𝘵𝘢 𝘢 𝘶𝘯𝘢 𝘤𝘢𝘯𝘢𝘭 𝘥𝘦 𝘷𝘰𝘪𝘤𝘦 𝘱𝘳𝘪𝘮𝘦𝘳𝘢𝘮𝘦𝘯𝘵𝘦.", ephemeral=True)
     
     if not player.voice_client:
         player.voice_client = await ctx.author.voice.channel.connect()
@@ -150,6 +156,8 @@ async def anteiku_play(ctx, *, query):
             if not tracks:
                 return await ctx.send("☹︎ 𝘚𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘸𝘦𝘯𝘵 𝘸𝘳𝘰𝘯𝘨 𝘸𝘪𝘵𝘩 𝘚𝘱𝘰𝘵𝘪𝘧𝘺, 𝘵𝘳𝘺 𝘢𝘨𝘢𝘪𝘯.", ephemeral=True)
             
+            if player.shuffle:
+                random.shuffle(tracks)
             player.queue.extend(tracks)
             await ctx.send(f"♬ Added  {len(tracks)} 𝘴𝘰𝘯𝘨𝘴 𝘧𝘳𝘰𝘮 𝘢 𝘱𝘳𝘦𝘵𝘵𝘺 𝘱𝘭𝘢𝘺𝘭𝘪𝘴𝘵.", ephemeral=True)
             if not player.voice_client.is_playing():
@@ -241,6 +249,20 @@ async def stop(ctx):
     else:
         await ctx.send("☹︎ 𝘐𝘮 𝘯𝘰𝘵 𝘤𝘰𝘯𝘯𝘦𝘤𝘵𝘦𝘥.", ephemeral=True)
 
+@bot.command(name="loop", help="Activa o desactiva la reproducción en bucle. Uso: !loop")
+async def loop(ctx):
+    player.loop = not player.loop
+    status = "activado" if player.loop else "desactivado"
+    await ctx.send(f".getStatusCode() 𝘓𝘰𝘰𝘱 𝘩𝘢𝘴 𝘣𝘦𝘦𝘯 {status}.", ephemeral=True)
+
+@bot.command(name="shuffle", help="Mezcla la cola de reproducción. Uso: !shuffle")
+async def shuffle(ctx):
+    if player.queue:
+        random.shuffle(player.queue)
+        await ctx.send(".getStatusCode() 𝘊𝘰𝘭𝘢 𝘦𝘭𝘦𝘤𝘵𝘳𝘪𝘧𝘪𝘦𝘥 𝘢 𝘮𝘢𝘹𝘪𝘮𝘶𝘮 𝘷𝘰𝘭𝘵𝘢𝘨𝘦!", ephemeral=True)
+    else:
+        await ctx.send(".getStatusCode() 𝘊𝘰𝘭𝘢 𝘦𝘮𝘱𝘵𝘺, 𝘯𝘰𝘵𝘩𝘪𝘯𝘨 𝘵𝘰 𝘴𝘩𝘶𝘧𝘧𝘭𝘦.", ephemeral=True)
+
 @bot.command(name="help", help="Muestra la lista de comandos y su uso. Uso: !help")
 async def help_command(ctx):
     embed = discord.Embed(
@@ -256,6 +278,12 @@ async def help_command(ctx):
                     inline=False)
     embed.add_field(name="!stop", 
                     value="Detiene la reproducción y desconecta al bot.\nEjemplo: !stop", 
+                    inline=False)
+    embed.add_field(name="!loop", 
+                    value="Activa o desactiva la reproducción en bucle.\nEjemplo: !loop", 
+                    inline=False)
+    embed.add_field(name="!shuffle", 
+                    value="Mezcla la cola de reproducción.\nEjemplo: !shuffle", 
                     inline=False)
     embed.add_field(name="!help", 
                     value="Muestra este mensaje de ayuda.\nEjemplo: !help", 
