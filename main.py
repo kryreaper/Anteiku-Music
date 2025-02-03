@@ -252,16 +252,16 @@ async def stop(ctx):
 @bot.command(name="loop", help="Activa o desactiva la reproducción en bucle. Uso: !loop")
 async def loop(ctx):
     player.loop = not player.loop
-    status = "activado" if player.loop else "desactivado"
-    await ctx.send(f".getStatusCode() 𝘓𝘰𝘰𝘱 𝘩𝘢𝘴 𝘣𝘦𝘦𝘯 {status}.", ephemeral=True)
+    status = "𝘈𝘤𝘵𝘪𝘷𝘦𝘥" if player.loop else "𝘋𝘦𝘴𝘢𝘤𝘵𝘪𝘷𝘦𝘥"
+    await ctx.send(f"♬ 𝘓𝘰𝘰𝘱 𝘩𝘢𝘴 𝘣𝘦𝘦𝘯 {status}.", ephemeral=True)
 
 @bot.command(name="shuffle", help="Mezcla la cola de reproducción. Uso: !shuffle")
 async def shuffle(ctx):
     if player.queue:
         random.shuffle(player.queue)
-        await ctx.send(".getStatusCode() 𝘊𝘰𝘭𝘢 𝘦𝘭𝘦𝘤𝘵𝘳𝘪𝘧𝘪𝘦𝘥 𝘢 𝘮𝘢𝘹𝘪𝘮𝘶𝘮 𝘷𝘰𝘭𝘵𝘢𝘨𝘦!", ephemeral=True)
+        await ctx.send("♬ 𝘊𝘰𝘭𝘢 𝘦𝘭𝘦𝘤𝘵𝘳𝘪𝘧𝘪𝘦𝘥 𝘢 𝘮𝘢𝘹𝘪𝘮𝘶𝘮 𝘷𝘰𝘭𝘵𝘢𝘨𝘦!", ephemeral=True)
     else:
-        await ctx.send(".getStatusCode() 𝘊𝘰𝘭𝘢 𝘦𝘮𝘱𝘵𝘺, 𝘯𝘰𝘵𝘩𝘪𝘯𝘨 𝘵𝘰 𝘴𝘩𝘶𝘧𝘧𝘭𝘦.", ephemeral=True)
+        await ctx.send("♬ 𝘊𝘰𝘭𝘢 𝘦𝘮𝘱𝘵𝘺, 𝘯𝘰𝘵𝘩𝘪𝘯𝘨 𝘵𝘰 𝘴𝘩𝘶𝘧𝘧𝘭𝘦.", ephemeral=True)
 
 @bot.command(name="help", help="Muestra la lista de comandos y su uso. Uso: !help")
 async def help_command(ctx):
