@@ -6,6 +6,8 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
+from flask import Flask
+import threading
 import random
 
 # Configuración inicial
@@ -325,6 +327,21 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_ready():
     print(f"✅ Anteiku Music operativo como {bot.user}")
+
+    # Configuración del servidor Flask para Railway
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot activo y funcionando."
+
+def run_flask():
+    app.run(host="0.0.0.0", port=8080)
+
+# Iniciar Flask en un hilo separado
+threading.Thread(target=run_flask, daemon=True).start()
+
+
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
